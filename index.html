@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Invitación de Boda — Segunda Vuelta ♥</title>
+  <meta name="description" content="Invitación de boda: una segunda oportunidad para el amor." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Montserrat:wght@300;400;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+
+<body>
+  <!-- Splash / Sobre -->
+  <main id="splash" class="splash">
+    <div class="intro">
+      <p class="kicker">Nuestra Boda</p>
+      <h1 class="title serif">Una segunda oportunidad</h1>
+    </div>
+
+    <button id="openBtn" class="envelope" aria-label="Abrir invitación">
+      <div class="env-body"></div>
+      <div class="env-flap" aria-hidden="true"></div>
+
+      <!-- Globo/etiqueta arriba -->
+      <div class="touch-banner hint" role="note" aria-hidden="true">
+        <span class="serif">Toca para abrir</span>
+        <span class="">Hay algo bonito adentro ✨</span>
+      </div>
+
+
+      <div class="seal" aria-hidden="true"></div>
+    </button>
+
+
+    <p class="footnote">Hecho con ♥ para dos almas que se encontraron en el
+      camino.</p>
+  </main>
+
+  <!-- Invitación -->
+  <section id="invite" class="invite hidden" aria-hidden="true">
+
+    <!-- Hero -->
+    <header class="hero hero-image">
+      <img src="./images/rings.jpg" alt="Anillos de boda" class="hero-bg-image">
+      <div class="hero-content container">
+        <p class="kicker">Con la bendición de nuestras familias</p>
+        <h2 class="hero-title serif">Lala <span class="amp">&amp;</span>
+          José</h2>
+        <p class="lead">
+          Entre historias que nos formaron y las que aún queremos escribir,
+          elegimos hacerlo juntos.
+        </p>
+        <!-- Opcional: CTAs
+    <div class="hero-ctas">
+      <a href="#cuando" class="btn fill">Ver detalles</a>
+      <a href="#ubicacion" class="btn outline light">Cómo llegar</a>
+    </div>
+    -->
+      </div>
+    </header>
+
+    <!-- Invitación breve -->
+    <section id="invitacion" class="section">
+      <div class="container">
+        <article class="invite-card center">
+          <p class="invite-lead">
+            Con mucho cariño, te invitamos a compartir con nosotros el día en
+            que uniremos nuestras vidas.
+          </p>
+          <p class="invite-lead">
+            Será un honor celebrar este momento tan especial contigo y tu
+            familia.
+          </p>
+          <blockquote class="invite-quote">
+            “Porque la felicidad es más grande cuando se comparte.”
+          </blockquote>
+        </article>
+      </div>
+    </section>
+
+    <!-- Frase -->
+    <section class="stripe">
+      <div class="container center">
+        <blockquote class="quote serif phrase">“Bastó un encuentro para que la
+          vida volviera a sorprendernos.”</blockquote>
+        <p class="muted">— Dos valientes felices</p>
+      </div>
+    </section>
+
+    <!-- Carrusel -->
+    <section class="section">
+      <div class="container">
+        <h3 class="section-title serif carousel-title">Un paso, un recuerdo; y así llegamos hasta hoy</h3>
+
+        <div class="carousel-wrap">
+          <div class="nav nav-floating" aria-hidden="false">
+            <button id="prev" class="navbtn" aria-label="Anterior">◀</button>
+            <button id="next" class="navbtn" aria-label="Siguiente">▶</button>
+          </div>
+
+          <div id="slider" class="carousel" aria-label="Carrusel de fotos">
+            <img src="images/slide2.jpg" alt="Flores y anillos" />
+            <img src="images/slide1_filled.jpg" alt="Pareja" class="focus-top" />
+            <img src="images/slide3.jpg" alt="Brindis" class="focus-top" />
+            <img src="images/slide4.jpg" alt="Brindis" class="focus-top" />
+          </div>
+        </div>
+
+        <!-- Indicadores -->
+        <ul class="carousel-indicators" id="carousel-indicators">
+          <li class="carousel-indicator active" data-slide="0"></li>
+          <li class="carousel-indicator" data-slide="1"></li>
+          <li class="carousel-indicator" data-slide="2"></li>
+          <li class="carousel-indicator" data-slide="3"></li>
+        </ul>
+      </div>
+    </section>
+
+
+    <!-- Ubicaciones -->
+    <section id="ubicacion" class="stripe">
+      <div class="container">
+        <header class="section-head center">
+          <h3 class="section-title serif">Ubicaciones</h3>
+          <p class="text">Sábado 27 de diciembre</p>
+        </header>
+
+        <div class="maps-grid">
+          <!-- Ceremonia -->
+          <article class="map-card">
+            <header class="map-head">
+              <h4 class="card-title serif">Ceremonia religiosa</h4>
+              <p class="text">Parroquia de La Encarnación · 12:00 p.m.</p>
+            </header>
+            <div class="map-wrap">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1009.8583876435819!2d-100.39312392238003!3d19.411260682578746!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x85d2a59a1d4b9f7f%3A0x44611fafa65060f3!2sParroquia%20La%20Encarnaci%C3%B3n!5e0!3m2!1ses-419!2smx!4v1755223490079!5m2!1ses-419!2smx"
+                loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            </div>
+            <div class="map-actions">
+              <a class="btn fill" href="https://maps.google.com/?q=Parroquia+La+Encarnaci%C3%B3n" target="_blank"
+                rel="noopener">
+                Abrir en Google Maps
+              </a>
+            </div>
+          </article>
+
+          <!-- Recepción -->
+          <article class="map-card">
+            <header class="map-head">
+              <h4 class="card-title serif">Recepción</h4>
+              <p class="text">Salón Princess · 1:00 p.m.</p>
+            </header>
+            <div class="map-wrap">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!3m2!1ses-419!2sus!4v1755224151741!5m2!1ses-419!2sus!6m8!1m7!1sVlJbPnmqguLzN65C9pEREQ!2m2!1d19.41476080632515!2d-100.3906685746835!3f276.31907260401573!4f-0.5097408835386545!5f0.7820865974627469"
+                loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+            </div>
+            <div class="map-actions">
+              <a class="btn fill" href="https://maps.google.com/?q=Car%20Wash%20%22Moreno's%22" target="_blank"
+                rel="noopener">
+                Abrir en Google Maps
+              </a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cuenta regresiva -->
+    <section id="cuando" class="section">
+      <div class="container">
+        <h3 class="section-title serif">La cuenta regresiva</h3>
+        <div id="countdown" class="countdown" aria-live="polite" aria-label="Cuenta regresiva">
+          <div class="cd-box">
+            <div class="cd-num" id="days">00</div>
+            <div class="cd-label">días</div>
+          </div>
+          <div class="cd-box">
+            <div class="cd-num" id="hours">00</div>
+            <div class="cd-label">horas</div>
+          </div>
+          <div class="cd-box">
+            <div class="cd-num" id="mins">00</div>
+            <div class="cd-label">min</div>
+          </div>
+          <div class="cd-box">
+            <div class="cd-num" id="secs">00</div>
+            <div class="cd-label">seg</div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <footer class="footer">
+      <div class="container center">
+        <p class="thanks serif">Con todo nuestro cariño, gracias por compartir este día con nosotros ♥</p>
+        <p class="muted">Creado con amor, sonrisas y un poquito de cafeína.</p>
+      </div>
+
+      <div style="margin:12px auto 0;max-width:280px;height:1px;background:#eee;"></div>
+
+      <small class="muted" style="display:block;margin-top:10px; text-align:center; font-size:11px">
+        © 2025 CODE GRIMMY · Todos los derechos reservados
+      </small>
+      </div>
+    </footer>
+  </section>
+
+  <script src="js/script.js" defer></script>
+</body>
+
+</html>
