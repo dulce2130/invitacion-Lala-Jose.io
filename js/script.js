@@ -156,138 +156,181 @@ function createFloatingPetals() {
   }
 }
 
-// ===== CARRUSEL  =====
-const slider = document.getElementById('slider');
-const prevBtn = document.querySelector('.C-arrow--prev');
-const nextBtn = document.querySelector('.C-arrow--next');
-const dots = Array.from(document.querySelectorAll('.C-dot'));
-const slides = Array.from(slider.querySelectorAll('.C-slide'));
+// ====== CARRUSEL PREMIUM ROBUSTO ======
 
-let current = 0;
-let timer = null;
-const autoplayMs = 4000;
+(function(){
+  // --- Referencias ---
+  const slider   = document.getElementById('slider');                    
+  const prevBtn  = document.querySelector('.C-arrow--prev');
+  const nextBtn  = document.querySelector('.C-arrow--next');
+  const dots     = Array.from(document.querySelectorAll('.C-dot'));
+  const slides   = Array.from(slider.querySelectorAll('.C-slide'));
+  const bar      = document.querySelector('.C-progress');
 
-let programmatic = false;     
-let targetLeft = 0;          
+  if (!slider || slides.length === 0) return; // Nada que hacer
 
-function leftOf(i){ return slides[i].offsetLeft; }
+  // --- Estado ---
+  let current = 0;
+  let timer = null;
+  const autoplayMs = 4000;
 
-function updateDots(){
-  dots.forEach((d,idx)=> d.classList.toggle('is-active', idx === current));
-  const bar = document.querySelector('.C-progress');
-  if(bar){
-    bar.style.transition = 'none';
-    bar.style.transform = 'scaleX(0)';
-    requestAnimationFrame(()=>{
-      bar.style.transition = `transform ${autoplayMs}ms linear`;
-      bar.style.transform = 'scaleX(1)';
+  let programmatic = false;   
+  let rafSync;                
+  let targetLeft = 0;        
+
+  // --- Utils ---
+  const leftOf = i => slides[i]?.offsetLeft ?? 0;
+
+  function updateDots(){
+    dots.forEach((d,idx)=> d.classList.toggle('is-active', idx === current));
+    if (bar){
+      bar.style.transition = 'none';
+      bar.style.transform  = 'scaleX(0)';
+      requestAnimationFrame(()=>{
+        bar.style.transition = `transform ${autoplayMs}ms linear`;
+        bar.style.transform  = 'scaleX(1)';
+      });
+    }
+  }
+
+  // Espera real a que termine el desplazamiento (programático o por inercia)
+  function waitForScrollEnd(goal){
+    return new Promise(resolve=>{
+      let last = slider.scrollLeft;
+      let idleMs = 0;
+      function tick(){
+        const now  = slider.scrollLeft;
+        const dist = Math.abs(now - goal);
+        if (dist < 1 || idleMs > 140){ resolve(); return; }
+        if (Math.abs(now - last) < 0.5){ idleMs += 16; } else { idleMs = 0; }
+        last = now;
+        requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
     });
   }
-}
 
-function waitForScrollEnd(goal){
-  return new Promise(resolve=>{
-    let last = slider.scrollLeft;
-    let idleMs = 0;
-
-    function tick(ts){
-      const now = slider.scrollLeft;
-      const dist = Math.abs(now - goal);
-      if (dist < 1 || idleMs > 120){
-        resolve();
-        return;
-      }
-      // si no cambió casi nada, acumula idle; si cambió, resetea
-      if (Math.abs(now - last) < 0.5){ idleMs += 16; } else { idleMs = 0; }
-      last = now;
-      requestAnimationFrame(tick);
+  // Espera a que el carrusel tenga medidas reales e imágenes iniciales decodificadas
+  async function waitLayoutReady(timeoutMs = 2000){
+    // 1) Espera fuentes (evita saltos por font-swap)
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch(_) {}
     }
-    requestAnimationFrame(tick);
-  });
-}
-
-// --- Autoplay como setTimeout encadenado ---
-function queueAuto(){
-  clearTimeout(timer);
-  timer = setTimeout(()=> goTo(current + 1, {user:false}), autoplayMs);
-}
-function stopAuto(){ clearTimeout(timer); }
-function restartAuto(){ stopAuto(); queueAuto(); }
-
-// --- Ir a slide ---
-async function goTo(i, {user} = {user:false}){
-  if (i < 0) i = slides.length - 1;
-  if (i >= slides.length) i = 0;
-  current = i;
-  updateDots();
-
-  programmatic = true;
-  slider.classList.add('no-snap');
-
-  targetLeft = leftOf(i);
-  slider.scrollTo({ left: targetLeft, behavior: 'smooth' });
-
-  await waitForScrollEnd(targetLeft);
-
-  programmatic = false;
-  slider.classList.remove('no-snap');
-
-  if (user) restartAuto();      // si el usuario lo movió
-  else       queueAuto();       // si fue autoplay, encadena el siguiente
-}
-
-
-// --- Controles ---
-prevBtn.addEventListener('click', ()=> goTo(current - 1, {user:true}));
-nextBtn.addEventListener('click', ()=> goTo(current + 1, {user:true}));
-dots.forEach((d,idx)=> d.addEventListener('click', ()=> goTo(idx, {user:true})));
-
-// Pausas  durante interacción táctil/hover/foco
-['mouseenter','focusin','pointerdown','touchstart'].forEach(ev=>{
-  slider.addEventListener(ev, ()=> stopAuto(), {passive:true});
-});
-['mouseleave','focusout','pointerup','touchend'].forEach(ev=>{
-  slider.addEventListener(ev, ()=> queueAuto(), {passive:true});
-});
-
-// Teclado
-slider.addEventListener('keydown', e=>{
-  if(e.key==='ArrowRight') goTo(current+1, {user:true});
-  if(e.key==='ArrowLeft')  goTo(current-1, {user:true});
-});
-
-// Sync cuando el usuario desliza manualmente (no durante programático)
-let raf;
-slider.addEventListener('scroll', ()=>{
-  if (programmatic) return;
-  cancelAnimationFrame(raf);
-  raf = requestAnimationFrame(()=>{
-    const center = slider.scrollLeft + slider.clientWidth/2;
-    let nearest = 0, best = Infinity;
-    slides.forEach((s,idx)=>{
-      const mid = s.offsetLeft + s.clientWidth/2;
-      const d = Math.abs(center - mid);
-      if (d < best){ best = d; nearest = idx; }
+    // 2) Decodifica las 2 primeras imágenes si se puede
+    const imgs = Array.from(slider.querySelectorAll('img')).slice(0, 2);
+    try {
+      await Promise.all(imgs.map(img=>{
+        if ('decode' in img) return img.decode().catch(()=>{});
+        return img.complete ? Promise.resolve() : new Promise(res=> img.onload = img.onerror = res);
+      }));
+    } catch(_) {}
+    // 3) Offsets válidos
+    const t0 = performance.now();
+    await new Promise(res=>{
+      (function check(){
+        const ok = slider.clientWidth > 0 && slides.length > 0 &&
+                   slides[0].offsetLeft === 0 &&
+                   (slides.length === 1 || slides[1].offsetLeft > 0);
+        if (ok || (performance.now() - t0) > timeoutMs) return res();
+        requestAnimationFrame(check);
+      })();
     });
-    if (nearest !== current){
-      current = nearest;
-      updateDots();
-    }
+  }
+
+  // --- Autoplay como setTimeout encadenado (no se pisa) ---
+  function queueAuto(){ clearTimeout(timer); timer = setTimeout(()=> goTo(current+1, {user:false}), autoplayMs); }
+  function stopAuto(){ clearTimeout(timer); }
+  function restartAuto(){ stopAuto(); queueAuto(); }
+
+  // --- Ir a slide ---
+  async function goTo(i, {user=false} = {}){
+    if (i < 0) i = slides.length - 1;
+    if (i >= slides.length) i = 0;
+    current = i;
+    updateDots();
+
+    programmatic = true;
+    slider.classList.add('no-snap');
+
+    targetLeft = leftOf(i);
+    slider.scrollTo({ left: targetLeft, behavior: 'smooth' });
+
+    await waitForScrollEnd(targetLeft);
+
+    programmatic = false;
+    slider.classList.remove('no-snap');
+
+    // Encadena siguiente tick
+    if (user) restartAuto();
+    else      queueAuto();
+  }
+
+  // --- Controles ---
+  if (prevBtn) prevBtn.addEventListener('click', ()=> goTo(current-1, {user:true}));
+  if (nextBtn) nextBtn.addEventListener('click', ()=> goTo(current+1, {user:true}));
+  dots.forEach((d,idx)=> d.addEventListener('click', ()=> goTo(idx, {user:true})));
+
+  // Pausa/reanuda por interacción (táctil/hover/foco)
+  ['mouseenter','focusin','pointerdown','touchstart'].forEach(ev=>{
+    slider.addEventListener(ev, ()=> stopAuto(), {passive:true});
   });
-});
+  ['mouseleave','focusout','pointerup','touchend'].forEach(ev=>{
+    slider.addEventListener(ev, ()=> queueAuto(), {passive:true});
+  });
 
-// Reposiciona sin animación tras resize/orientación (no rompe autoplay)
-new ResizeObserver(()=>{
-  programmatic = true;
-  slider.classList.add('no-snap');
-  slider.scrollLeft = leftOf(current);
-  slider.classList.remove('no-snap');
-  programmatic = false;
-}).observe(slider);
+  // Teclado
+  slider.addEventListener('keydown', e=>{
+    if (e.key === 'ArrowRight') goTo(current+1, {user:true});
+    if (e.key === 'ArrowLeft')  goTo(current-1, {user:true});
+  });
 
-// Inicio
-updateDots();
-queueAuto();
+  // Sync índice por posición real cuando el usuario desliza
+  slider.addEventListener('scroll', ()=>{
+    if (programmatic) return;
+    cancelAnimationFrame(rafSync);
+    rafSync = requestAnimationFrame(()=>{
+      const center = slider.scrollLeft + slider.clientWidth/2;
+      let nearest = 0, best = Infinity;
+      slides.forEach((s,idx)=>{
+        const mid = s.offsetLeft + s.clientWidth/2;
+        const d = Math.abs(center - mid);
+        if (d < best){ best = d; nearest = idx; }
+      });
+      if (nearest !== current){
+        current = nearest;
+        updateDots();
+      }
+    });
+  });
+
+  // Reposiciona sin animar tras resize/orientación
+  new ResizeObserver(()=>{
+    programmatic = true;
+    slider.classList.add('no-snap');
+    slider.scrollLeft = leftOf(current);
+    slider.classList.remove('no-snap');
+    programmatic = false;
+  }).observe(slider);
+
+  // Pausa autoplay si la pestaña se oculta (evita desincronías)
+  document.addEventListener('visibilitychange', ()=>{
+    if (document.hidden) stopAuto();
+    else queueAuto();
+  });
+
+  (async function init(){
+    await waitLayoutReady();              
+    programmatic = true;
+    slider.classList.add('no-snap');
+    slider.scrollLeft = leftOf(current);  
+    slider.classList.remove('no-snap');
+    programmatic = false;
+
+    updateDots();
+    if (!document.hidden) queueAuto();     
+  })();
+})();
+
 
 
 
