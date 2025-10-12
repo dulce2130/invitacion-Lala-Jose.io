@@ -95,31 +95,59 @@
     <!-- Carrusel -->
     <section class="section">
       <div class="container">
-        <h3 class="section-title serif carousel-title">Un paso, un recuerdo; y así llegamos hasta hoy</h3>
+        <h3 class="section-title serif carousel-title">
+          Un paso, un recuerdo; y así llegamos hasta hoy
+        </h3>
 
-        <div class="carousel-wrap">
-          <div class="nav nav-floating" aria-hidden="false">
-            <button id="prev" class="navbtn" aria-label="Anterior">◀</button>
-            <button id="next" class="navbtn" aria-label="Siguiente">▶</button>
+        <div class="Carousel" aria-roledescription="carrusel">
+          <!-- NAV -->
+          <button class="C-arrow C-arrow--prev" aria-label="Anterior">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+          <button class="C-arrow C-arrow--next" aria-label="Siguiente">
+            <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+              <path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+            </svg>
+          </button>
+
+          <!-- VIEWPORT -->
+          <div class="C-viewport" id="slider" tabindex="0" role="group" aria-label="Carrusel de fotos">
+            <!-- SLIDE -->
+            <figure class="C-slide">
+              <img src="images/slide2.jpg" alt="Flores y anillos" loading="lazy" decoding="async" draggable="false"
+                oncontextmenu="return false;" />
+            </figure>
+
+            <figure class="C-slide">
+              <img src="images/slide1_filled.jpg" alt="Pareja" class="focus-top" loading="lazy" decoding="async"
+                draggable="false" oncontextmenu="return false;" />
+            </figure>
+
+            <figure class="C-slide">
+              <img src="images/slide3.jpg" alt="Brindis" class="focus-top" loading="lazy" decoding="async"
+                draggable="false" oncontextmenu="return false;" />
+            </figure>
+
+            <figure class="C-slide">
+              <img src="images/slide4.jpg" alt="Firma" class="focus-top" loading="lazy" decoding="async"
+                draggable="false" oncontextmenu="return false;" />
+            </figure>
           </div>
 
-          <div id="slider" class="carousel" aria-label="Carrusel de fotos">
-            <img src="images/slide2.jpg" alt="Flores y anillos" />
-            <img src="images/slide1_filled.jpg" alt="Pareja" class="focus-top" />
-            <img src="images/slide3.jpg" alt="Brindis" class="focus-top" />
-            <img src="images/slide4.jpg" alt="Brindis" class="focus-top" />
+          <!-- INDICADORES -->
+          <div class="C-indicators" id="carousel-indicators" aria-hidden="false">
+            <button class="C-dot is-active" data-slide="0" aria-label="Ir a foto 1"></button>
+            <button class="C-dot" data-slide="1" aria-label="Ir a foto 2"></button>
+            <button class="C-dot" data-slide="2" aria-label="Ir a foto 3"></button>
+            <button class="C-dot" data-slide="3" aria-label="Ir a foto 4"></button>
+            <span class="C-progress" aria-hidden="true"></span>
           </div>
         </div>
-
-        <!-- Indicadores -->
-        <ul class="carousel-indicators" id="carousel-indicators">
-          <li class="carousel-indicator active" data-slide="0"></li>
-          <li class="carousel-indicator" data-slide="1"></li>
-          <li class="carousel-indicator" data-slide="2"></li>
-          <li class="carousel-indicator" data-slide="3"></li>
-        </ul>
       </div>
     </section>
+
 
 
     <!-- Ubicaciones -->
@@ -154,7 +182,10 @@
           <article class="map-card">
             <header class="map-head">
               <h4 class="card-title serif">Recepción</h4>
-              <p class="text">Salón Princess · 1:00 p.m.</p>
+              <p class="text">
+                Después de la ceremonia religiosa, los invitamos cordialmente a celebrar con nosotros en el Salón
+                Princess.
+              </p>
             </header>
             <div class="map-wrap">
               <iframe
@@ -207,7 +238,7 @@
       <div style="margin:12px auto 0;max-width:280px;height:1px;background:#eee;"></div>
 
       <small class="muted" style="display:block;margin-top:10px; text-align:center; font-size:11px">
-        © 2025 CODE GRIMMY · Todos los derechos reservados
+        © 2025 Dulce Valeria González Sánchez · Todos los derechos reservados
       </small>
       </div>
     </footer>
