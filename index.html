@@ -15,8 +15,7 @@
   <meta property="og:title" content="Lala & José 💍 | Nuestra Boda">
   <meta property="og:description"
     content="Acompáñanos en este día tan especial. Encuentra aquí los detalles de la ceremonia y la recepción.">
-  <meta property="og:image"
-    content="https://github.com/dulce2130/invitacion-Lala-Jose.io/blob/main/images/rings.jpg">
+  <meta property="og:image" content="https://github.com/dulce2130/invitacion-Lala-Jose.io/blob/main/images/rings.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:alt" content="Anillos de boda sobre fondo elegante">
@@ -25,8 +24,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Lala & José 💍 | Nuestra Boda">
   <meta name="twitter:description" content="Acompáñanos en este día tan especial.">
-  <meta name="twitter:image"
-    content="https://github.com/dulce2130/invitacion-Lala-Jose.io/blob/main/images/rings.jpg">
+  <meta name="twitter:image" content="https://github.com/dulce2130/invitacion-Lala-Jose.io/blob/main/images/rings.jpg">
 
   <!-- SEO básico -->
   <meta name="description"
@@ -259,6 +257,42 @@
 
     </section>
 
+    <!-- Buenos deseos -->
+    <section class="section" id="buenos-deseos">
+      <div class="container" style="max-width:1100px;">
+        <h3 class="section-title serif">Buenos deseos</h3>
+
+        <div class="wishes-grid">
+          <!-- Form embebido -->
+          <div class="wishes-form">
+            <iframe id="wishes-iframe"
+              src="https://docs.google.com/forms/d/e/1FAIpQLSdBcKRjFzjJ9nDg6w33EKSCcDfJovGnEpw01iNw5AL-Hl6bOg/viewform?embedded=true"
+              width="100%" height="680" frameborder="0" marginheight="0" marginwidth="0" loading="lazy">
+              Cargando…
+            </iframe>
+            <p class="muted center" style="margin-top:8px">
+              Al enviar, los mensajes se actualizan automáticamente ✨
+            </p>
+          </div>
+
+          <!-- Listado -->
+          <div class="wishes-list">
+            <div id="wishes" class="grid-2" aria-live="polite"></div>
+
+            <div class="center" style="margin-top:12px">
+              <button id="wishes-more" class="btn outline" style="display:none">
+                Cargar más
+              </button>
+            </div>
+
+            <p id="wish-hint" class="muted" style="margin-top:10px">Cargando mensajes…</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
     <footer class="footer">
       <div class="container center">
         <p class="thanks serif">Con todo nuestro cariño, gracias por compartir este día con nosotros ♥</p>
@@ -275,6 +309,7 @@
   </section>
 
   <script src="js/script.js" defer></script>
+  <script src="js/whishes.js" defer></script>
 </body>
 
 </html>

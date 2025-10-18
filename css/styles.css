@@ -783,3 +783,28 @@ body {
         transition: none !important
     }
 }
+
+
+/* =========================
+     Tarjetas de buenos deseos
+     ========================= */
+     
+/* Layout formulario + lista */
+.wishes-grid{ display:grid; grid-template-columns:1fr; gap:20px; }
+@media (min-width:960px){ .wishes-grid{ grid-template-columns:1fr 1fr; } }
+
+.wishes-form iframe{
+  border-radius:16px; background:#fff; border:1px solid #eee;
+  box-shadow:0 8px 24px rgba(0,0,0,.05);
+}
+
+/* Tarjetas de deseos */
+#wishes{ gap:18px; }
+.wish{
+  background:#fff; border:1px solid #e5e7eb; border-radius:16px;
+  padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.05);
+}
+.wish-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.wish-name{ color:var(--accent); font-weight:600; }
+.wish-time{ color:#9ca3af; font-size:.85rem; }
+.wish-msg{ color:#4b5563; white-space:pre-wrap; }
