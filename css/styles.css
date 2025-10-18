@@ -799,12 +799,29 @@ body {
 }
 
 /* Tarjetas de deseos */
-#wishes{ gap:18px; }
+#wishes{ 
+    gap:18px; 
+  transition: min-height 0.3s ease;
+}
 .wish{
   background:#fff; border:1px solid #e5e7eb; border-radius:16px;
   padding:16px; box-shadow:0 8px 24px rgba(0,0,0,.05);
+    transition: opacity 0.3s ease;
+
 }
 .wish-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
 .wish-name{ color:var(--accent); font-weight:600; }
 .wish-time{ color:#9ca3af; font-size:.85rem; }
 .wish-msg{ color:#4b5563; white-space:pre-wrap; }
+/* Estilos para evitar flashes durante las transiciones */
+#wishes:not(:empty) + #wishes-more {
+  transition: opacity 0.2s ease;
+}
+
+.muted {
+  opacity: 0.7;
+}
+
+.center {
+  text-align: center;
+}
