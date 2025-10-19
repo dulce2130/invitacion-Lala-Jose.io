@@ -1,38 +1,43 @@
-/* ========= wishes.js (anti-parpadeo, anti-doble-carga) ========= */
+/* ========= wishes.js (sin parpadeo, sin “desaparecer”) ========= */
 (() => {
-  // --- Guard global: evita que el módulo se ejecute dos veces ---
+  // Evita doble ejecución si el script se carga dos veces
   if (window.__wishesInit) return;
   window.__wishesInit = true;
 
   document.addEventListener('DOMContentLoaded', () => {
+    // === CONFIG ===
     const CSV_URL =
       'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6NdovwmjXAcW0XiLIS9o_ZWkkwjyblIYSRxewucvYlD1eGMmU3UrcdX2Ct4HC0tfSTJKc5-87rY0D/pub?gid=1867337060&single=true&output=csv';
 
-    const PAGE_SIZE = 3;
-    const REFRESH_VISIBLE_MS = 15000;
-    const BOOST_MS = 90000;
-    const BOOST_INTERVAL_MS = 5000;
-    const FETCH_TIMEOUT_MS = 10000;
+    const PAGE_SIZE            = 5;      // cuántos mostrar
+    const REFRESH_VISIBLE_MS   = 15000;  // refresco normal cuando la sección es visible
+    const BOOST_POLL_MS        = 4000;   // refresco durante el “boost” tras tocar el iframe
+    const BOOST_WINDOW_MS      = 90000;  // cuánto dura el boost
+    const FETCH_TIMEOUT_MS     = 10000;  // timeout de red
 
+    // === DOM ===
     const section    = document.getElementById('buenos-deseos');
     const listEl     = document.getElementById('wishes');
-    const hintEl     = document.getElementById('wish-hint');
+    const hintEl     = document.getElementById('wish-hint'); // <small id="wish-hint"></small>
     const moreBtn    = document.getElementById('wishes-more');
     const iframeForm = document.getElementById('wishes-iframe');
     if (!section || !listEl) return;
 
-    // Loader inicial (esquelético) para que no diga “no hay” por error
+    // Loader inicial (opcional)
     listEl.innerHTML = '<div class="wish wish--skeleton"></div>'.repeat(3);
 
-    let ALL = [];
-    let VISIBLE = PAGE_SIZE;
-    let lastHash = '';
-    let visTimer = null;
-    let boostTimer = null;
-    let refreshSeq = 0;
-    let lastAppliedSeq = 0;
-    let firstPaintDone = false;
+    // === Estado ===
+    let ALL = [];                 // dataset aplicado
+    let VISIBLE = PAGE_SIZE;      // cuántos mostramos
+    let lastHash = '';            // hash del dataset aplicado
+    let refreshSeq = 0;           // evita “carreras” de fetch
+    let lastAppliedSeq = 0;       // última respuesta aplicada
+    let visTimer = null;          // intervalo cuando visible
+    let boostTimer = null;        // intervalo rápido tras tocar el iframe
+    let firstPaintDone = false;   // para no mostrar “no hay” antes de tiempo
+    let inBoost = false;          // flag de boost activo
 
+    // === Utils ===
     const esc = s => String(s ?? '')
       .replaceAll('&','&amp;').replaceAll('<','&lt;')
       .replaceAll('>','&gt;').replaceAll('"','&quot;')
@@ -47,7 +52,7 @@
           else if (c=='"'){ inQ=false; }
           else { cur+=c; }
         } else {
-          if (c=='"') inQ=true;
+          if (c=='"') inQ = true;
           else if (c==','){ row.push(cur); cur=''; }
           else if (c=='\n' || c=='\r'){
             if (cur!=='' || row.length){ row.push(cur); rows.push(row); row=[]; cur=''; }
@@ -67,14 +72,18 @@
       return p;
     }
 
+    function updateHint(text){
+      if (!hintEl) return;
+      hintEl.textContent = text || '';
+    }
+
+    // === Render atómico (sin vaciar primero) ===
     function render(){
-      // No re-render idéntico
       if (!ALL.length){
-        // Solo muestra “no hay” si ya terminamos la primera carga real
         if (firstPaintDone){
           listEl.replaceChildren(elMsg('Aún no hay mensajes. Sé el primero en escribir 💌'));
+          moreBtn && (moreBtn.style.display = 'none');
         }
-        if (moreBtn) moreBtn.style.display = 'none';
         return;
       }
 
@@ -95,11 +104,12 @@
       });
 
       listEl.replaceChildren(frag);
-      if (moreBtn) moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none';
-      if (hintEl)  hintEl.textContent   = 'Se actualiza automáticamente 💌';
+      moreBtn && (moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none');
+      updateHint(inBoost ? 'Tu mensaje aparecerá en unos segundos… 💌' : 'Se actualiza automáticamente 💌');
       firstPaintDone = true;
     }
 
+    // === Fetch robusto (no-store, timeout, anti-carreras) ===
     async function fetchWishes(){
       const seq = ++refreshSeq;
       const ctrl = new AbortController();
@@ -113,6 +123,7 @@
         });
         clearTimeout(to);
         if (!res.ok) throw new Error('HTTP '+res.status);
+
         const csv = await res.text();
         const rows = parseCSV(csv);
         if (rows.length <= 1) return { seq, data: [] };
@@ -125,87 +136,116 @@
         const data = rows.slice(1)
           .filter(r => (r[iMsg] || '').trim() !== '')
           .map(r => ({ ts:r[iTime], name:r[iName], msg:r[iMsg] }))
-          .reverse();
+          .reverse(); // más recientes primero
 
         return { seq, data };
-      } catch(e){
+      } catch (e){
         clearTimeout(to);
         console.warn('fetchWishes error:', e.message || e);
         return { seq, data: null };
       }
     }
 
-    async function refreshAndRender(keepCount=true){
+    // === Refresh estable (NUNCA reducimos la lista mostrada) ===
+    async function refreshAndRender(keepCount = true){
+      const hadData = ALL.length > 0;
       const prevLen = ALL.length;
       if (!keepCount) VISIBLE = PAGE_SIZE;
 
-      const { seq, data } = await fetchWishes();
+      const res = await fetchWishes();
+      if (!res) return;
+      const { seq, data } = res;
 
-      // ignora respuestas viejas
+      // Anti-carreras
       if (seq < lastAppliedSeq) return;
 
-      // error de red → no toques nada
+      // Error de red → no tocar
       if (data === null) return;
 
-      // CSV momentáneamente vacío → si ya teníamos algo, NO borres (evita flash)
-      if (data.length === 0 && prevLen > 0) return;
-
-      // si es igual, no re-render
-      const newHash = hashState(data);
-      if (data.length && newHash === lastHash){
-        if (keepCount) VISIBLE = Math.min(Math.max(VISIBLE, PAGE_SIZE), ALL.length);
-        if (moreBtn) moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none';
+      // 1) CSV vacío temporal: si ya teníamos datos, IGNORAR (evita parpadeo)
+      if (data.length === 0 && hadData) {
+        // mantenemos lo que hay; hint se encarga del mensaje al usuario
         return;
       }
 
+      // 2) Política “no shrink”: si data trae MENOS filas que las que ya mostramos, IGNORAR
+      //    (Google a veces “retrocede” por segundos; no lo reflejamos)
+      if (data.length < prevLen) {
+        return;
+      }
+
+      // 3) Si es igual al último dataset aplicado, no re-renderices
+      const newHash = hashState(data);
+      if (newHash === lastHash) {
+        moreBtn && (moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none');
+        updateHint(inBoost ? 'Tu mensaje aparecerá en unos segundos… 💌' : 'Se actualiza automáticamente 💌');
+        return;
+      }
+
+      // 4) Cambios reales → aplica
       lastAppliedSeq = seq;
       lastHash = newHash;
-      ALL = data; // si está vacío aquí, es porque nunca hubo nada (primera carga)
-      if (keepCount) VISIBLE = Math.min(Math.max(VISIBLE, PAGE_SIZE), ALL.length);
+      ALL = data;
+      VISIBLE = Math.min(Math.max(VISIBLE, PAGE_SIZE), ALL.length);
       render();
     }
 
-    // Botón “Cargar más”
-    moreBtn?.addEventListener('click', ()=>{
+    // === “Cargar más” ===
+    moreBtn && moreBtn.addEventListener('click', () => {
       VISIBLE = Math.min(VISIBLE + PAGE_SIZE, ALL.length);
       render();
     });
 
-    // Autorefresco (un solo intervalo activo)
+    // === Auto-refresh cuando la sección es visible ===
     if ('IntersectionObserver' in window){
-      const io = new IntersectionObserver(entries=>{
-        entries.forEach(e=>{
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
           if (e.isIntersecting){
             refreshAndRender(true);
-            if (visTimer) clearInterval(visTimer);
-            visTimer = setInterval(()=>refreshAndRender(true), REFRESH_VISIBLE_MS);
+            clearInterval(visTimer);
+            visTimer = setInterval(
+              () => refreshAndRender(true),
+              inBoost ? BOOST_POLL_MS : REFRESH_VISIBLE_MS
+            );
           } else {
-            if (visTimer) clearInterval(visTimer);
+            clearInterval(visTimer);
             visTimer = null;
           }
         });
-      }, { root: null, rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+      }, { threshold: 0.2 });
       io.observe(section);
     }
 
-    // Boost tras interacción con el iframe
-    function boost(){
+    // === Boost tras interacción con el iframe (probable envío) ===
+    function startBoost(){
+      inBoost = true;
+      updateHint('Tu mensaje aparecerá en unos segundos… 💌');
       refreshAndRender(true);
-      if (boostTimer) clearInterval(boostTimer);
-      const endAt = Date.now() + BOOST_MS;
-      boostTimer = setInterval(()=>{
-        refreshAndRender(true);
-        if (Date.now() > endAt){
-          clearInterval(boostTimer);
-          boostTimer = null;
+
+      // Cambia el intervalo si ya hay uno por el observer
+      if (visTimer){
+        clearInterval(visTimer);
+        visTimer = setInterval(() => refreshAndRender(true), BOOST_POLL_MS);
+      }
+
+      clearTimeout(boostTimer);
+      boostTimer = setTimeout(() => {
+        inBoost = false;
+        updateHint('Se actualiza automáticamente 💌');
+        // Restablece intervalo normal si visible
+        if (visTimer){
+          clearInterval(visTimer);
+          visTimer = setInterval(() => refreshAndRender(true), REFRESH_VISIBLE_MS);
         }
-      }, BOOST_INTERVAL_MS);
+      }, BOOST_WINDOW_MS);
     }
-    ['pointerdown','touchstart','load'].forEach(ev=>{
-      iframeForm?.addEventListener(ev, boost, { passive:true });
+
+    // Dispara el boost al interactuar con el iframe (tocar, click, carga)
+    ['pointerdown','touchstart','load','submit'].forEach(ev=>{
+      iframeForm && iframeForm.addEventListener(ev, startBoost, { passive:true });
     });
 
-    // Primera carga real
+    // === Primera carga ===
     refreshAndRender(false);
   });
 })();
