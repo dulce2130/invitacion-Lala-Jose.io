@@ -9,7 +9,7 @@
     const CSV_URL =
       'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6NdovwmjXAcW0XiLIS9o_ZWkkwjyblIYSRxewucvYlD1eGMmU3UrcdX2Ct4HC0tfSTJKc5-87rY0D/pub?gid=1867337060&single=true&output=csv';
 
-    const PAGE_SIZE            = 5;      // cuántos mostrar
+    const PAGE_SIZE            = 3;      // cuántos mostrar
     const REFRESH_VISIBLE_MS   = 15000;  // refresco normal cuando la sección es visible
     const BOOST_POLL_MS        = 4000;   // refresco durante el “boost” tras tocar el iframe
     const BOOST_WINDOW_MS      = 90000;  // cuánto dura el boost
