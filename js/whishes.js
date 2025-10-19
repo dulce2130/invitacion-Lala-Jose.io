@@ -1,5 +1,5 @@
 /* ========= wishes.js =========
-   Google Sheets (CSV) → Tarjetas con "Cargar más" y autorefresco sin parpadeo
+   Google Sheets (CSV) → Tarjetas con "Cargar más" (sin parpadeo)
 ================================ */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -7,11 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const CSV_URL =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ6NdovwmjXAcW0XiLIS9o_ZWkkwjyblIYSRxewucvYlD1eGMmU3UrcdX2Ct4HC0tfSTJKc5-87rY0D/pub?gid=1867337060&single=true&output=csv';
 
-  const PAGE_SIZE           = 5;        // muestra inicial y por “cargar más”
-  const REFRESH_VISIBLE_MS  = 15000;    // autorefresco cuando la sección es visible
-  const BOOST_MS            = 90000;    // tiempo del boost tras tocar el iframe
-  const BOOST_INTERVAL_MS   = 5000;     // cada cuánto refresca durante el boost
-  const FETCH_TIMEOUT_MS    = 10000;    // timeout de red (defensivo)
+  const PAGE_SIZE           = 3;
+  const REFRESH_VISIBLE_MS  = 15000;
+  const BOOST_MS            = 90000;
+  const BOOST_INTERVAL_MS   = 5000;
+  const FETCH_TIMEOUT_MS    = 10000;
 
   // --- DOM ---
   const section    = document.getElementById('buenos-deseos');
@@ -22,19 +22,21 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!section || !listEl) return;
 
   // --- Estado ---
-  let ALL = [];                 // cache actual
-  let VISIBLE = PAGE_SIZE;      // cuántos mostrar
-  let lastHash = '';            // hash del último render
-  let visTimer = null;          // intervalo de autorefresco
-  let boostTimer = null;        // intervalo de boost
-  let refreshSeq = 0;           // controla carreras de fetch
-  let lastAppliedSeq = 0;       // última respuesta aplicada
+  let ALL = [];
+  let VISIBLE = PAGE_SIZE;
+  let visTimer = null;
+  let boostTimer = null;
+  let refreshSeq = 0;
+  let lastAppliedSeq = 0;
+  let hadAny = false; // para no mostrar el mensaje vacío después
 
   // --- Utils ---
   const esc = s => String(s ?? '')
     .replaceAll('&','&amp;').replaceAll('<','&lt;')
     .replaceAll('>','&gt;').replaceAll('"','&quot;')
     .replaceAll("'",'&#39;');
+
+  const rowId = r => `${r.ts || ''}|${r.name || ''}|${r.msg || ''}`;
 
   function parseCSV(text){
     const rows=[]; let row=[], cur='', inQ=false;
@@ -57,50 +59,76 @@ document.addEventListener('DOMContentLoaded', () => {
     return rows;
   }
 
-  const hashState = arr => JSON.stringify(arr);
-
-  // --- Render sin parpadeo (reemplazo atómico) ---
-  function render(){
-    if (!ALL.length){
-      // No toques el DOM si ya había contenido; este mensaje solo si nunca hubo nada
-      if (listEl.childElementCount === 0){
-        listEl.replaceChildren(elMsg('Aún no hay mensajes. Sé el primero en escribir 💌'));
-      }
-      if (moreBtn) moreBtn.style.display = 'none';
-      return;
-    }
-
-    const frag = document.createDocumentFragment();
-    const slice = ALL.slice(0, VISIBLE);
-
-    slice.forEach(({ts,name,msg})=>{
-      const art = document.createElement('article');
-      art.className = 'wish';
-      art.innerHTML = `
-        <div class="wish-head">
-          <span class="wish-name">${esc(name || 'Anónimo')}</span>
-          <time class="wish-time">${esc(ts || '')}</time>
-        </div>
-        <p class="wish-msg">${esc(msg || '')}</p>
-      `;
-      frag.appendChild(art);
-    });
-
-    // Reemplazo atómico → nada de innerHTML a '' (evita blink)
-    listEl.replaceChildren(frag);
-
-    if (moreBtn) moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none';
-    if (hintEl)  hintEl.textContent   = 'Se actualiza automáticamente 💌';
+  function buildCard({ts,name,msg}){
+    const art = document.createElement('article');
+    art.className = 'wish';
+    art.dataset.id = rowId({ts,name,msg});
+    art.innerHTML = `
+      <div class="wish-head">
+        <span class="wish-name">${esc(name || 'Anónimo')}</span>
+        <time class="wish-time">${esc(ts || '')}</time>
+      </div>
+      <p class="wish-msg">${esc(msg || '')}</p>
+    `;
+    return art;
   }
 
-  function elMsg(txt){
+  function showEmptyOnce(){
+    if (hadAny) return; // ya hubo datos alguna vez → no flashes “vacío”
+    listEl.replaceChildren(emptyP('Aún no hay mensajes. Sé el primero en escribir 💌'));
+    if (moreBtn) moreBtn.style.display = 'none';
+  }
+  function emptyP(txt){
     const p = document.createElement('p');
     p.className = 'muted center';
     p.textContent = txt;
     return p;
   }
 
-  // --- Fetch robusto (sin carreras, sin cache, con timeout) ---
+  function updateMoreBtn(){
+    if (!moreBtn) return;
+    moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none';
+  }
+
+  // === Render incremental (sin parpadeo) ===
+  function syncRender(newData){
+    if (newData.length === 0){
+      showEmptyOnce();
+      return;
+    }
+    hadAny = true;
+
+    // ids actuales en DOM (en orden visual)
+    const currentIds = Array.from(listEl.children).map(el => el.dataset.id);
+    const newIds = newData.map(rowId);
+
+    // Caso feliz: la hoja solo creció al frente (lo normal)
+    const currentIsSuffix = currentIds.every((id, idx) => id === newIds[idx]);
+    if (currentIds.length === 0 || currentIsSuffix){
+      // cuántos nuevos hay al frente
+      const addedCount = Math.max(0, Math.min(newIds.length, VISIBLE) - currentIds.length);
+      if (addedCount > 0){
+        // Inserta solo las nuevas tarjetas al inicio
+        for (let i = addedCount - 1; i >= 0; i--){
+          listEl.prepend(buildCard(newData[i]));
+        }
+      }
+      // Asegura que haya exactamente VISIBLE elementos (recorta si sobran)
+      while (listEl.children.length > Math.min(VISIBLE, newData.length)){
+        listEl.removeChild(listEl.lastElementChild);
+      }
+      updateMoreBtn();
+      return;
+    }
+
+    // Si el orden cambió de forma rara, render completo (infrecuente)
+    const frag = document.createDocumentFragment();
+    newData.slice(0, VISIBLE).forEach(r => frag.appendChild(buildCard(r)));
+    listEl.replaceChildren(frag);
+    updateMoreBtn();
+  }
+
+  // --- Fetch robusto ---
   async function fetchWishes(){
     const seq = ++refreshSeq;
     const ctrl = new AbortController();
@@ -132,54 +160,35 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch(e){
       clearTimeout(to);
       console.warn('fetchWishes error:', e.message || e);
-      return { seq, data: null }; // null = error, no tocar estado
+      return { seq, data: null };
     }
   }
 
-  // --- Refresh sin parpadeo ---
-  async function refreshAndRender(keepCount=true){
-    const prevLen = ALL.length;
+  // --- Refresh (sin borrar lo que ya hay si Google da vacío momentáneo) ---
+  async function refresh(keepCount = true){
     if (!keepCount) VISIBLE = PAGE_SIZE;
 
     const { seq, data } = await fetchWishes();
+    if (seq < lastAppliedSeq) return; // carrera
+    if (data === null) return;        // error de red → no tocar
 
-    // Ignora respuestas viejas (carrera)
-    if (seq < lastAppliedSeq) return;
-
-    if (data === null){
-      // error de red → no tocamos nada
-      return;
-    }
     if (data.length === 0){
-      // Google a veces devuelve vacío momentáneo; si ya teníamos datos, NO borres
-      if (prevLen > 0) return;
-      // si nunca hubo nada, permite mostrar vacío
-      ALL = [];
-      lastHash = '';
-      render();
-      return;
-    }
-
-    const newHash = hashState(data);
-    if (newHash === lastHash){
-      // nada cambió, pero igual actualiza visibilidad del botón “más”
-      if (keepCount) VISIBLE = Math.min(Math.max(VISIBLE, PAGE_SIZE), ALL.length);
-      if (moreBtn) moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none';
-      return;
+      if (ALL.length === 0) showEmptyOnce();
+      return; // no borres lo que ya se ve
     }
 
     lastAppliedSeq = seq;
-    lastHash = newHash;
     ALL = data;
     if (keepCount) VISIBLE = Math.min(Math.max(VISIBLE, PAGE_SIZE), ALL.length);
-    render();
+    syncRender(ALL);
+    if (hintEl) hintEl.textContent = 'Se actualiza automáticamente 💌';
   }
 
-  // --- Cargar más ---
+  // --- “Cargar más” ---
   if (moreBtn){
     moreBtn.addEventListener('click', ()=>{
       VISIBLE = Math.min(VISIBLE + PAGE_SIZE, ALL.length);
-      render();
+      syncRender(ALL);
     });
   }
 
@@ -188,9 +197,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const io = new IntersectionObserver(entries=>{
       entries.forEach(e=>{
         if (e.isIntersecting){
-          refreshAndRender(true);
+          refresh(true);
           clearInterval(visTimer);
-          visTimer = setInterval(()=>refreshAndRender(true), REFRESH_VISIBLE_MS);
+          visTimer = setInterval(()=>refresh(true), REFRESH_VISIBLE_MS);
         } else {
           clearInterval(visTimer);
         }
@@ -199,13 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
     io.observe(section);
   }
 
-  // --- Boost tras interacción con el iframe (probable envío) ---
+  // --- Boost tras tocar el iframe (probable envío) ---
   function boost(){
-    refreshAndRender(true);
+    refresh(true);
     clearInterval(boostTimer);
     const endAt = Date.now() + BOOST_MS;
     boostTimer = setInterval(()=>{
-      refreshAndRender(true);
+      refresh(true);
       if (Date.now() > endAt) clearInterval(boostTimer);
     }, BOOST_INTERVAL_MS);
   }
@@ -214,5 +223,5 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Primera carga ---
-  refreshAndRender(false);
+  refresh(false);
 });
