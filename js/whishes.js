@@ -105,7 +105,6 @@
 
       listEl.replaceChildren(frag);
       moreBtn && (moreBtn.style.display = (ALL.length > VISIBLE) ? '' : 'none');
-      updateHint(inBoost ? 'Tu mensaje aparecerá en unos segundos… 💌' : 'Se actualiza automáticamente 💌');
       firstPaintDone = true;
     }
 
